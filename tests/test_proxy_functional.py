@@ -928,3 +928,25 @@ async def test_proxy_auth() -> None:
                 proxy="http://proxy.example.com",
                 proxy_auth=("user", "pass"),
             )
+
+
+async def test_netrc_in_unreadable_directory(proxy_test_server, get_request, mocker) -> None:
+    url = "http://aiohttp.io/path"
+    proxy = await proxy_test_server()
+    mocker.patch.dict(os.environ, {"http_proxy": str(proxy.url)})
+    mocker.patch("pathlib.Path.is_file", mock_is_file)
+
+    import netrc
+    def raiser(*args, **kwargs):
+        raise OSError("aiohttp NETRC test")
+
+    mocker.patch('netrc.netrc', raiser)
+
+
+    await get_request(url=url, trust_env=True)
+
+    assert len(proxy.requests_list) == 1
+    assert proxy.request.method == "GET"
+    assert proxy.request.host == "aiohttp.io"
+    assert proxy.request.path_qs == "/path"
+    assert "Proxy-Authorization" not in proxy.request.headers

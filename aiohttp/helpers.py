@@ -225,6 +225,10 @@ def netrc_from_env() -> Optional[netrc.netrc]:
     except netrc.NetrcParseError as e:
         client_logger.warning("Could not parse .netrc file: %s", e)
     except OSError as e:
+
+        breakpoint()
+        assert False, 'gothere'
+
         # we couldn't read the file (doesn't exist, permissions, etc.)
         if netrc_env or netrc_path.is_file():
             # only warn if the environment wanted us to load it,
